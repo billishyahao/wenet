@@ -26,6 +26,7 @@ import numpy as np
 from wenet.utils.checkpoint import load_checkpoint
 from wenet.utils.init_model import init_model
 
+
 try:
     import onnx
     import onnxruntime

@@ -102,6 +102,7 @@ def init_model(configs):
                            ctc=ctc,
                            **configs['model_conf'])
     else:
+        print("hebi-dbg: asr model")
         model = ASRModel(vocab_size=vocab_size,
                          encoder=encoder,
                          decoder=decoder,
