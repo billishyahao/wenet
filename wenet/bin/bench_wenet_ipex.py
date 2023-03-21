@@ -119,50 +119,53 @@ def do_torchscript_measure(model, inputs, loop=300, profile=False):
 
 def do_ipex_measure(model, inputs, loop=300, profile=False):
     import intel_extension_for_pytorch as ipex
-    
-    ipex.optimize(model, dtype=torch.float32, inplace=True, auto_kernel_selection=True)
-    model = torch.jit.trace(model, inputs, strict=False).eval()
-    model = torch.jit.freeze(model)
+    with torch.no_grad():
+        model = ipex.optimize(model, dtype=torch.float32, inplace=True)
+        model = torch.jit.trace(model, inputs, strict=False).eval()
+        model = torch.jit.freeze(model)
 
-    print("model has been frozen...")
-    print(model)
+        # print("model has been frozen...")
+        # print(model)
 
-    # warm up
-    for i in range(2):
-        out = model(*inputs)
-
-    t1 = time.perf_counter()
-
-    for i in range(loop):
-        out = model(*inputs)
-    
-    t2 = time.perf_counter()
-
-    ct = (t2-t1) * 1000.0 /loop
-    print('Wenet ASR IPEX BF16 Average Inference Latency: %0.4f ms' % ct)
-    print("Mean throughput (std dev): %.2f fps" % (1000/ct))
-
-    if profile in ('true', 'y', 'yes'):
-        with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as p:
+        # warm up
+        for i in range(2):
             out = model(*inputs)
-        # p.export_chrome_trace("trace.json")
-        print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=-1))
-        print("\t\tbench torch script encoder, done!")
+
+        t1 = time.perf_counter()
+
+        for i in range(loop):
+            out = model(*inputs)
+        
+        t2 = time.perf_counter()
+
+        ct = (t2-t1) * 1000.0 /loop
+        print('Wenet ASR IPEX BF16 Average Inference Latency: %0.4f ms' % ct)
+        print("Mean throughput (std dev): %.2f fps" % (1000/ct))
+
+        if profile in ('true', 'y', 'yes'):
+            with torch.profiler.profile(activities=[torch.profiler.ProfilerActivity.CPU]) as p:
+                out = model(*inputs)
+            # p.export_chrome_trace("trace.json")
+            print(p.key_averages().table(sort_by="self_cpu_time_total", row_limit=-1))
+            print("\t\tbench torch script encoder, done!")
 
 
 def do_ipex_bf16_measure(model, inputs,  loop=300, profile=False):
     import intel_extension_for_pytorch as ipex
 
     with torch.cpu.amp.autocast(), torch.no_grad():
-        ipex.optimize(model, dtype=torch.bfloat16, inplace=True)
-        model = torch.jit.trace(model, inputs, strict=False).eval()
+        model.eval()
+        model = ipex.optimize(model, dtype=torch.bfloat16, inplace=True)
+        model = torch.jit.trace(model, inputs, strict=False)
         model = torch.jit.freeze(model)
 
-        print("model has been frozen...")
-        print(model)
+        # exit(1)
+
+        # print("model has been frozen...")
+        # print(model)
 
         # warm up
-        for i in range(2):
+        for i in range(10):
             out = model(*inputs)
 
         print("hebi-dbg: model graph for")

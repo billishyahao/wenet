@@ -1,13 +1,14 @@
+export DNNL_VERBOSE=1
 export PYTORCH_TENSOREXPR=0
 export PYTHONPATH=/home/yahao/pingan_wenet/wenet:%PYTHONPATH
 
 
 base_core=0
-physical_cores=48
+physical_cores=96
 
 # core_arr=(8 16 32 48)
 # core_arr=(48)
-core_arr=(48)
+core_arr=(4)
 
 log_root="./offline_log/"
 
@@ -99,10 +100,10 @@ for j in $(seq 0 $[${#core_arr[@]}-1]); do
         export KMP_BLOCK_TIME=1
         export KMP_AFFINITY=granularity=fine,verbose,compact,1,0
         #export KMP_AFFINITY=granularity=fine,verbose,compact
-        export DNNL_VERBOSE=0 
+        export DNNL_VERBOSE=1 
         
         numactl --physcpubind=${start_core}-${end_core} \
-        python ./wenet/bin/bench_wenet_ipex.py \
+        python ./wenet/bin/bench_wenet_ipex_dummy.py \
 			--config /home/yahao/pingan_wenet/20210601_u2++_conformer_exp/train.yaml \
 			--checkpoint /home/yahao/pingan_wenet/20210601_u2++_conformer_exp/final.pt \
 			--mode ipex_bf16 \
